@@ -4,6 +4,7 @@ import com.example.demo.dto.ExpenseDTO;
 import com.example.demo.service.ExpenseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -36,7 +37,7 @@ public class ExpenseController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ExpenseDTO> updateExpense(@PathVariable Long id, @RequestBody ExpenseDTO expenseDTO) {
+    public ResponseEntity<ExpenseDTO> updateExpense(@PathVariable @NonNull Long id, @RequestBody ExpenseDTO expenseDTO) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String email = auth.getName();
         
@@ -49,7 +50,7 @@ public class ExpenseController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteExpense(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteExpense(@PathVariable @NonNull Long id) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String email = auth.getName();
         

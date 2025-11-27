@@ -4,10 +4,16 @@
 
 set -e
 
+# Get script directory and navigate to ops folder
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+OPS_DIR="$(dirname "$SCRIPT_DIR")"
+cd "$OPS_DIR"
+
 NAMESPACE="expense-tracker"
 DOCKER_HUB_USERNAME="agentcat1"
 
 echo "🚀 Deploying Expense Tracker to Kubernetes..."
+echo "📁 Working from: $OPS_DIR"
 
 # Check if kubectl is available
 if ! command -v kubectl &> /dev/null; then
@@ -25,15 +31,15 @@ echo "✅ Kubernetes cluster connected"
 
 # Create namespace
 echo "📦 Creating namespace..."
-kubectl apply -f namespace.yaml
+kubectl apply -f networking/namespace.yaml
 
 # Apply secrets
 echo "🔐 Applying secrets..."
-kubectl apply -f secrets.yaml
+kubectl apply -f networking/secrets.yaml
 
 # Deploy database
 echo "🗄️ Deploying PostgreSQL..."
-kubectl apply -f postgres.yaml
+kubectl apply -f database/postgres.yaml
 
 # Wait for database to be ready
 echo "⏳ Waiting for PostgreSQL to be ready..."
@@ -41,7 +47,7 @@ kubectl wait --for=condition=ready pod -l app=postgres -n $NAMESPACE --timeout=3
 
 # Deploy backend
 echo "🔧 Deploying backend..."
-kubectl apply -f backend.yaml
+kubectl apply -f backend/backend.yaml
 
 # Wait for backend to be ready
 echo "⏳ Waiting for backend to be ready..."
@@ -49,15 +55,15 @@ kubectl wait --for=condition=ready pod -l app=backend -n $NAMESPACE --timeout=30
 
 # Deploy frontend
 echo "🎨 Deploying frontend..."
-kubectl apply -f frontend.yaml
+kubectl apply -f frontend/frontend.yaml
 
 # Wait for frontend to be ready
 echo "⏳ Waiting for frontend to be ready..."
 kubectl wait --for=condition=ready pod -l app=frontend -n $NAMESPACE --timeout=300s
 
-# Deploy ingress (optional)
-echo "🌐 Deploying ingress..."
-kubectl apply -f ingress.yaml
+# Deploy ingress (optional - skip for local deployment)
+echo "🌐 Skipping ingress for local deployment..."
+# kubectl apply -f networking/ingress.yaml
 
 echo "✅ Deployment completed!"
 
@@ -67,25 +73,29 @@ echo "📊 Deployment Status:"
 kubectl get all -n $NAMESPACE
 
 echo ""
-echo "🔍 Service URLs:"
-FRONTEND_IP=$(kubectl get service frontend-service -n $NAMESPACE -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "pending")
-BACKEND_IP=$(kubectl get service backend-service -n $NAMESPACE -o jsonpath='{.spec.clusterIP}')
+echo "🔍 Service Access:"
 
-if [ "$FRONTEND_IP" != "pending" ] && [ "$FRONTEND_IP" != "" ]; then
-    echo "🎨 Frontend: http://$FRONTEND_IP:3000"
-else
-    echo "🎨 Frontend: LoadBalancer IP pending..."
-fi
+# Get NodePort information
+echo "🎨 Frontend Access Options:"
+echo "  NodePort: http://localhost:30001"
+echo "  Port-forward: kubectl port-forward -n $NAMESPACE service/frontend-service 3000:3000"
 
-echo "🔧 Backend: http://$BACKEND_IP:8081"
+echo ""
+echo "🔧 Backend Access Options:"
+echo "  NodePort: http://localhost:30002"
+echo "  Port-forward: kubectl port-forward -n $NAMESPACE service/backend-service 8081:8081"
 
-# Show ingress info
-INGRESS_IP=$(kubectl get ingress expense-tracker-ingress -n $NAMESPACE -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "pending")
-if [ "$INGRESS_IP" != "pending" ] && [ "$INGRESS_IP" != "" ]; then
-    echo "🌐 Ingress: http://$INGRESS_IP (add 'expense-tracker.local' to /etc/hosts)"
-else
-    echo "🌐 Ingress: LoadBalancer IP pending..."
-fi
+echo ""
+echo "🚀 Quick Start Commands:"
+echo "# Option 1: Use NodePort (recommended for local)"
+echo "echo 'Frontend: http://localhost:30001'"
+echo "echo 'Backend:  http://localhost:30002'"
+echo ""
+echo "# Option 2: Use Port Forwarding"
+echo "kubectl port-forward -n $NAMESPACE service/frontend-service 3000:3000 &"
+echo "kubectl port-forward -n $NAMESPACE service/backend-service 8081:8081 &"
+echo "echo 'Frontend: http://localhost:3000'"
+echo "echo 'Backend:  http://localhost:8081'"
 
 echo ""
 echo "📝 To view logs:"

@@ -5,6 +5,7 @@ import com.example.demo.entity.Expense;
 import com.example.demo.entity.User;
 import com.example.demo.repository.ExpenseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -33,7 +34,7 @@ public class ExpenseService {
         return convertToDTO(expense);
     }
 
-    public ExpenseDTO updateExpense(String email, Long expenseId, ExpenseDTO expenseDTO) {
+    public ExpenseDTO updateExpense(String email, @NonNull Long expenseId, ExpenseDTO expenseDTO) {
         User user = userService.findByEmail(email);
         Expense expense = expenseRepository.findById(expenseId)
                 .orElseThrow(() -> new RuntimeException("Expense not found"));
@@ -52,7 +53,7 @@ public class ExpenseService {
         return convertToDTO(expense);
     }
 
-    public void deleteExpense(String email, Long expenseId) {
+    public void deleteExpense(String email, @NonNull Long expenseId) {
         User user = userService.findByEmail(email);
         Expense expense = expenseRepository.findById(expenseId)
                 .orElseThrow(() -> new RuntimeException("Expense not found"));
@@ -64,7 +65,7 @@ public class ExpenseService {
         expenseRepository.delete(expense);
     }
 
-    public ExpenseDTO getExpense(String email, Long expenseId) {
+    public ExpenseDTO getExpense(String email, @NonNull Long expenseId) {
         User user = userService.findByEmail(email);
         Expense expense = expenseRepository.findById(expenseId)
                 .orElseThrow(() -> new RuntimeException("Expense not found"));
