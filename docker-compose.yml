@@ -1,7 +1,6 @@
 version: "3.8"
 
 services:
-  # PostgreSQL Database Service
   db:
     image: postgres:15-alpine
     container_name: expense_app_db
@@ -28,6 +27,7 @@ services:
     build:
       context: ./BACKEND
       dockerfile: Dockerfile
+    image: agentcat1/expense-tracker-backend:latest
     container_name: expense_app_backend
     restart: always
     ports:
@@ -59,6 +59,7 @@ services:
     build:
       context: ./FRONTEND
       dockerfile: Dockerfile
+    image: agentcat1/expense-tracker-frontend:latest
     container_name: expense_app_frontend
     restart: always
     ports:
