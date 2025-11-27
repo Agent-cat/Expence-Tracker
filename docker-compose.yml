@@ -15,7 +15,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./BACKEND/init-db.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - expense_network
     healthcheck:
@@ -26,7 +26,7 @@ services:
 
   backend:
     build:
-      context: .
+      context: ./BACKEND
       dockerfile: Dockerfile
     container_name: expense_app_backend
     restart: always
@@ -50,6 +50,25 @@ services:
       - expense_network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081/api/auth/validate"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./FRONTEND
+      dockerfile: Dockerfile
+    container_name: expense_app_frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - expense_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 30s
       timeout: 10s
       retries: 3
