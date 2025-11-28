@@ -1,0 +1,71 @@
+name: CD - Deploy to Kubernetes
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+env:
+  DOCKER_HUB_USERNAME: agentcat1
+  BACKEND_IMAGE: agentcat1/expense-tracker-backend
+  FRONTEND_IMAGE: agentcat1/expense-tracker-frontend
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy to Kubernetes via Ansible
+    environment: production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set image tags
+        id: tags
+        run: |
+          COMMIT_SHA="${{ github.sha }}"
+          echo "commit_sha=${COMMIT_SHA}" >> $GITHUB_OUTPUT
+          echo "backend_tag=${{ env.BACKEND_IMAGE }}:${COMMIT_SHA}" >> $GITHUB_OUTPUT
+          echo "frontend_tag=${{ env.FRONTEND_IMAGE }}:${COMMIT_SHA}" >> $GITHUB_OUTPUT
+
+      - name: Setup SSH to local machine
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.LOCAL_SSH_PRIVATE_KEY }}" > ~/.ssh/local_key
+          chmod 600 ~/.ssh/local_key
+          ssh-keyscan -H ${{ secrets.LOCAL_MACHINE_IP }} >> ~/.ssh/known_hosts
+
+      - name: Install Ansible
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ansible
+
+      - name: Create Ansible inventory and variables
+        run: |
+          mkdir -p ansible
+          cat > ansible/inventory << EOF
+          [local]
+          ${{ secrets.LOCAL_MACHINE_IP }} ansible_user=${{ secrets.LOCAL_USER }} ansible_ssh_private_key_file=~/.ssh/local_key
+          EOF
+
+          cat > ansible/vars.yml << EOF
+          ---
+          backend_image: "${{ steps.tags.outputs.backend_tag }}"
+          frontend_image: "${{ steps.tags.outputs.frontend_tag }}"
+          namespace: "expense-tracker"
+          commit_sha: "${{ steps.tags.outputs.commit_sha }}"
+          EOF
+
+      - name: Run Ansible playbook
+        run: |
+          cd ansible
+          ansible-playbook -i inventory ../ansible/deploy.yml --extra-vars "@vars.yml"
+
+      - name: Generate deployment summary
+        run: |
+          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Status | Image Tag |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|-----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend | ✅ Deployed | ${{ steps.tags.outputs.backend_tag }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend | ✅ Deployed | ${{ steps.tags.outputs.frontend_tag }} |" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit SHA**: ${{ steps.tags.outputs.commit_sha }}" >> $GITHUB_STEP_SUMMARY
