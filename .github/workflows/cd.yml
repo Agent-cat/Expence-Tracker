@@ -31,9 +31,15 @@ jobs:
       - name: Setup SSH to local machine
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.LOCAL_SSH_PRIVATE_KEY }}" > ~/.ssh/local_key
-          chmod 600 ~/.ssh/local_key
-          ssh-keyscan -H ${{ secrets.LOCAL_MACHINE_IP }} >> ~/.ssh/known_hosts
+          chmod 700 ~/.ssh
+          if [ -n "${{ secrets.LOCAL_SSH_PRIVATE_KEY }}" ]; then
+            echo "${{ secrets.LOCAL_SSH_PRIVATE_KEY }}" > ~/.ssh/local_key
+            chmod 600 ~/.ssh/local_key
+            ssh-keyscan -H ${{ secrets.LOCAL_MACHINE_IP }} >> ~/.ssh/known_hosts 2>/dev/null || echo "Warning: Could not add host key"
+          else
+            echo "Warning: LOCAL_SSH_PRIVATE_KEY secret is not set"
+            exit 1
+          fi
 
       - name: Install Ansible
         run: |
@@ -59,7 +65,7 @@ jobs:
       - name: Run Ansible playbook
         run: |
           cd ansible
-          ansible-playbook -i inventory ../ansible/deploy.yml --extra-vars "@vars.yml"
+          ansible-playbook -i inventory deploy.yml --extra-vars "@vars.yml"
 
       - name: Generate deployment summary
         run: |
