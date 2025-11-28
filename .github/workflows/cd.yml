@@ -36,8 +36,13 @@ jobs:
             echo "${{ secrets.LOCAL_SSH_PRIVATE_KEY }}" > ~/.ssh/local_key
             chmod 600 ~/.ssh/local_key
             ssh-keyscan -H ${{ secrets.LOCAL_MACHINE_IP }} >> ~/.ssh/known_hosts 2>/dev/null || echo "Warning: Could not add host key"
+            # Test SSH connection
+            ssh -i ~/.ssh/local_key -o StrictHostKeyChecking=no -o ConnectTimeout=10 ${{ secrets.LOCAL_USER }}@${{ secrets.LOCAL_MACHINE_IP }} 'echo "SSH connection successful"' || {
+              echo "Error: SSH connection failed"
+              exit 1
+            }
           else
-            echo "Warning: LOCAL_SSH_PRIVATE_KEY secret is not set"
+            echo "Error: LOCAL_SSH_PRIVATE_KEY secret is not set"
             exit 1
           fi
 
@@ -58,7 +63,7 @@ jobs:
           ---
           backend_image: "${{ steps.tags.outputs.backend_tag }}"
           frontend_image: "${{ steps.tags.outputs.frontend_tag }}"
-          namespace: "expense-tracker"
+          k8s_namespace: "expense-tracker"
           commit_sha: "${{ steps.tags.outputs.commit_sha }}"
           EOF
 

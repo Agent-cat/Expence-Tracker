@@ -17,7 +17,8 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: agentcat1/expense-tracker-frontend:latest
+          image: agentcat1/expense-tracker-frontend:main-5015226
+          imagePullPolicy: Never
           ports:
             - containerPort: 3000
           resources:

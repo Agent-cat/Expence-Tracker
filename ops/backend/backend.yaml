@@ -17,7 +17,8 @@ spec:
     spec:
       containers:
         - name: backend
-          image: agentcat1/expense-tracker-backend:latest
+          image: agentcat1/expense-tracker-backend:main-5015226
+          imagePullPolicy: Never
           ports:
             - containerPort: 8081
           env:

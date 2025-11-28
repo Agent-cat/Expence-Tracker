@@ -24,7 +24,7 @@
           apiVersion: v1
           kind: Namespace
           metadata:
-            name: {{ namespace }}
+            name: {{ k8s_namespace }}
 
     - name: Generate backend deployment manifest
       ansible.builtin.copy:
@@ -34,7 +34,7 @@
           kind: Deployment
           metadata:
             name: backend
-            namespace: {{ namespace }}
+            namespace: {{ k8s_namespace }}
           spec:
             replicas: 2
             selector:
@@ -64,7 +64,7 @@
           kind: Service
           metadata:
             name: backend-service
-            namespace: {{ namespace }}
+            namespace: {{ k8s_namespace }}
           spec:
             selector:
               app: backend
@@ -81,7 +81,7 @@
           kind: Deployment
           metadata:
             name: frontend
-            namespace: {{ namespace }}
+            namespace: {{ k8s_namespace }}
           spec:
             replicas: 2
             selector:
@@ -105,7 +105,7 @@
           kind: Service
           metadata:
             name: frontend-service
-            namespace: {{ namespace }}
+            namespace: {{ k8s_namespace }}
           spec:
             selector:
               app: frontend
@@ -122,7 +122,7 @@
           kind: PersistentVolumeClaim
           metadata:
             name: postgres-pvc
-            namespace: {{ namespace }}
+            namespace: {{ k8s_namespace }}
           spec:
             accessModes:
               - ReadWriteOnce
@@ -134,7 +134,7 @@
           kind: StatefulSet
           metadata:
             name: postgres
-            namespace: {{ namespace }}
+            namespace: {{ k8s_namespace }}
           spec:
             serviceName: postgres-service
             replicas: 1
@@ -174,7 +174,7 @@
           kind: Service
           metadata:
             name: postgres-service
-            namespace: {{ namespace }}
+            namespace: {{ k8s_namespace }}
           spec:
             selector:
               app: postgres
@@ -191,31 +191,31 @@
       register: postgres_result
 
     - name: Wait for PostgreSQL to be ready
-      ansible.builtin.command: kubectl wait --for=condition=ready pod -l app=postgres -n {{ namespace }} --timeout=300s
+      ansible.builtin.command: kubectl wait --for=condition=ready pod -l app=postgres -n {{ k8s_namespace }} --timeout=300s
 
     - name: Apply backend deployment
       ansible.builtin.command: kubectl apply -f {{ manifests_dir }}/backend.yaml
       register: backend_result
 
     - name: Wait for backend to be ready
-      ansible.builtin.command: kubectl wait --for=condition=ready pod -l app=backend -n {{ namespace }} --timeout=300s
+      ansible.builtin.command: kubectl wait --for=condition=ready pod -l app=backend -n {{ k8s_namespace }} --timeout=300s
 
     - name: Apply frontend deployment
       ansible.builtin.command: kubectl apply -f {{ manifests_dir }}/frontend.yaml
       register: frontend_result
 
     - name: Wait for frontend to be ready
-      ansible.builtin.command: kubectl wait --for=condition=ready pod -l app=frontend -n {{ namespace }} --timeout=300s
+      ansible.builtin.command: kubectl wait --for=condition=ready pod -l app=frontend -n {{ k8s_namespace }} --timeout=300s
 
     - name: Get deployment status
-      ansible.builtin.command: kubectl get all -n {{ namespace }}
+      ansible.builtin.command: kubectl get all -n {{ k8s_namespace }}
       register: deployment_status
 
     - name: Display deployment results
       ansible.builtin.debug:
         msg:
           - "Deployment completed successfully!"
-          - "Namespace: {{ namespace }}"
+          - "Namespace: {{ k8s_namespace }}"
           - "Backend: {{ backend_image }}"
           - "Frontend: {{ frontend_image }}"
           - "Status: {{ deployment_status.stdout_lines }}"
